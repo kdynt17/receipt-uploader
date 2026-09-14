@@ -2,6 +2,8 @@
 
 학교 계정 사용자에게서 이름과 영수증 파일을 받아 담당자의 비공개 Google Drive에 저장하는 소형 웹앱입니다.
 
+현재 안내 페이지: https://kdynt17.github.io/receipt-uploader/
+
 ## 구조
 
 1. GitHub Pages에는 공개 안내문과 제출 시작 링크만 둡니다.
@@ -33,7 +35,7 @@ Google, GitHub, 네트워크 사업자 또는 Google Workspace 관리자는 각�
 4. 웹 앱으로 새 배포합니다.
    - 실행 사용자: 배포자
    - 액세스 사용자: 배포자와 같은 Google Workspace 도메인의 사용자
-5. `/exec` URL을 `docs/index.html`의 `__APPS_SCRIPT_URL__` 자리에 넣습니다.
+5. `docs/index.html`의 제출 링크를 발급받은 `/exec` URL로 설정합니다.
 
 Apps Script 프로젝트는 명시적으로 다음 최소 범위를 요청합니다.
 
