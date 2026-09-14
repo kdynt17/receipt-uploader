@@ -35,8 +35,8 @@
       .card { padding: clamp(22px, 5vw, 36px); border: 1px solid var(--line); border-radius: 24px; background: var(--paper); box-shadow: 0 18px 50px rgba(32, 58, 44, .08); }
       .field { margin-bottom: 24px; }
       label, legend { display: block; margin-bottom: 9px; font-weight: 760; }
-      input[type="text"], input[type="file"] { width: 100%; border: 1px solid #aab9b0; border-radius: 12px; background: white; color: var(--ink); font: inherit; }
-      input[type="text"] { padding: 13px 14px; }
+      input[type="text"], input[type="date"], input[type="file"] { width: 100%; border: 1px solid #aab9b0; border-radius: 12px; background: white; color: var(--ink); font: inherit; }
+      input[type="text"], input[type="date"] { padding: 13px 14px; }
       input[type="file"] { padding: 10px; }
       input:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
       .hint { margin: 8px 0 0; color: var(--muted); font-size: .88rem; line-height: 1.55; }
@@ -53,7 +53,6 @@
       .status.success { color: var(--primary-dark); }
       .after-submit { display: none; margin-top: 22px; padding: 20px; border-radius: 14px; background: #e7f4eb; text-align: center; }
       .after-submit strong { display: block; margin: 6px 0; font-size: 1.25rem; }
-      .back-link { display: inline-block; margin-top: 26px; color: var(--primary-dark); font-weight: 700; text-underline-offset: 3px; }
       .privacy-footnote { margin: 22px 2px 0; color: var(--muted); font-size: .82rem; line-height: 1.6; }
     </style>
   </head>
@@ -61,7 +60,7 @@
     <main>
       <p class="eyebrow">PRIVATE GOOGLE STORAGE</p>
       <h1><?= appName ?></h1>
-      <p class="intro">이름과 영수증 파일을 제출해 주세요. 파일은 담당자의 비공개 Google Drive에 바로 저장됩니다.</p>
+      <p class="intro">이름, 구매내용, 구매일자와 영수증 파일을 제출해 주세요. 파일은 담당자의 비공개 Google Drive에 바로 저장됩니다.</p>
 
       <section class="card" aria-labelledby="form-title">
         <h2 id="form-title" style="margin-top:0">영수증 제출</h2>
@@ -73,6 +72,18 @@
           </div>
 
           <div class="field">
+            <label for="purchase-description">무엇을 샀나요?</label>
+            <input id="purchase-description" name="purchaseDescription" type="text" maxlength="100" autocomplete="off" required>
+            <p class="hint">영수증에서 확인할 수 있는 물품이나 사용처를 100자 이내로 적어 주세요.</p>
+          </div>
+
+          <div class="field">
+            <label for="purchase-date">언제 샀나요?</label>
+            <input id="purchase-date" name="purchaseDate" type="date" required>
+            <p class="hint">영수증에 표시된 구매일자를 선택해 주세요.</p>
+          </div>
+
+          <div class="field">
             <label for="receipt-file">영수증 파일</label>
             <input id="receipt-file" name="receiptFile" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required>
             <p class="hint">PDF·JPG·PNG, 최대 <?= maxFileMb ?>MB. 주민번호·계좌번호 등 불필요한 정보는 가리고 제출하세요.</p>
@@ -81,10 +92,10 @@
           <fieldset>
             <legend>개인정보 수집·이용 안내</legend>
             <ul class="privacy-list">
-              <li>수집 항목: 입력한 이름, 영수증 파일, 제출 시각</li>
+              <li>수집 항목: 이름, 구매내용, 구매일자, 영수증 파일, 제출 시각</li>
               <li>이용 목적: 영수증 접수와 확인</li>
               <li>보관 위치: 담당자 Google Drive의 비공개 폴더</li>
-              <li>보관 기간: 제출 후 <?= retentionDays ?>일, 이후 파일과 접수 기록 자동 영구 삭제</li>
+              <li>보관 기간: 담당자가 직접 삭제할 때까지 보관하며 자동 삭제하지 않음</li>
               <li>앱은 이메일·IP·원본 파일명을 별도로 기록하지 않습니다.</li>
             </ul>
             <label class="consent" for="consent">
@@ -105,8 +116,7 @@
         </div>
       </section>
 
-      <p class="privacy-footnote">절대적인 무유출을 기술적으로 보장할 수는 없습니다. 담당자 계정과 Google Workspace 관리 정책에 따라 관리자 접근 또는 제공자 수준의 보존이 있을 수 있습니다.</p>
-      <a class="back-link" href="<?= publicPageUrl ?>" rel="noreferrer">안내 페이지로 돌아가기</a>
+      <p class="privacy-footnote">자동 삭제 기능은 사용하지 않습니다. 절대적인 무유출을 기술적으로 보장할 수는 없으며, 담당자 계정과 Google Workspace 관리 정책에 따라 관리자 접근 또는 제공자 수준의 보존이 있을 수 있습니다.</p>
     </main>
 
     <script>
@@ -115,6 +125,7 @@
 
         const form = document.getElementById('receipt-form');
         const fileInput = document.getElementById('receipt-file');
+        const purchaseDateInput = document.getElementById('purchase-date');
         const nonceInput = document.getElementById('submission-nonce');
         const button = document.getElementById('submit-button');
         const status = document.getElementById('status');
@@ -125,6 +136,14 @@
 
         function newNonce() {
           nonceInput.value = crypto.randomUUID();
+        }
+
+        function todayIso() {
+          const today = new Date();
+          const year = String(today.getFullYear());
+          const month = String(today.getMonth() + 1).padStart(2, '0');
+          const day = String(today.getDate()).padStart(2, '0');
+          return year + '-' + month + '-' + day;
         }
 
         function setStatus(message, type) {
@@ -138,6 +157,7 @@
         }
 
         newNonce();
+        purchaseDateInput.max = todayIso();
 
         form.addEventListener('submit', function (event) {
           event.preventDefault();
@@ -186,4 +206,3 @@
     </script>
   </body>
 </html>
-
