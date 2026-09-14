@@ -1,5 +1,5 @@
 const CONFIG = Object.freeze({
-  APP_NAME: '영수증 제출함',
+  APP_NAME: '중화중학교 AI 영수증 제출',
   STORAGE_FOLDER_NAME: '영수증 제출함 - 비공개 보관',
   LOG_SPREADSHEET_NAME: '영수증 제출함 - 접수 기록',
   LOG_SHEET_NAME: '제출내역',
@@ -452,3 +452,4 @@ function publicError_(message) {
 function isPublicError_(error) {
   return Boolean(error && error.isPublic === true);
 }
+
