@@ -4,6 +4,7 @@ const CONFIG = Object.freeze({
   LOG_SPREADSHEET_NAME: '영수증 제출함 - 접수 기록',
   LOG_SHEET_NAME: '제출내역',
   MAX_FILE_BYTES: 8 * 1024 * 1024,
+  MAX_SUBMISSIONS_PER_HOUR: 60,
   ALLOWED_FILES: Object.freeze({
     pdf: Object.freeze({ mime: 'application/pdf', magic: [0x25, 0x50, 0x44, 0x46, 0x2d] }),
     jpg: Object.freeze({ mime: 'image/jpeg', magic: [0xff, 0xd8, 0xff] }),
@@ -130,9 +131,11 @@ function submitReceipt(formObject) {
       return { ok: true, reference: existingReference, duplicate: true };
     }
 
+    enforceHourlySubmissionLimit_();
+
     const submittedAt = new Date();
     const reference = createReference_(submittedAt);
-    const storedName = 'receipt_' + Utilities.getUuid() + '.' + submission.extension;
+    const storedName = createStoredFilename_(submission);
     const storedBlob = submission.blob
       .copyBlob()
       .setName(storedName)
@@ -309,6 +312,10 @@ function validateSubmission_(formObject) {
     throw publicError_('개인정보 수집·이용에 동의해야 제출할 수 있습니다.');
   }
 
+  if (String(formObject.website || '').trim() !== '') {
+    throw publicError_('제출 정보를 확인할 수 없습니다. 페이지를 새로고침해 주세요.');
+  }
+
   const name = String(formObject.submitterName || '').normalize('NFC').trim();
   if (!/^[\p{L}\p{M}][\p{L}\p{M} .'-]{1,49}$/u.test(name)) {
     throw publicError_('이름은 문자 중심으로 2~50자 이내로 입력해 주세요.');
@@ -388,6 +395,38 @@ function validateSubmission_(formObject) {
 function safeSheetText_(value) {
   const text = String(value);
   return /^[=+\-@]/.test(text) ? "'" + text : text;
+}
+
+function createStoredFilename_(submission) {
+  const datePart = submission.purchaseDate;
+  const namePart = sanitizeFilenamePart_(submission.name, 30);
+  const itemPart = sanitizeFilenamePart_(submission.purchaseDescription, 50);
+  const uniquePart = Utilities.getUuid().replace(/-/g, '').slice(0, 8).toUpperCase();
+  return [datePart, namePart, itemPart, uniquePart].join('_') + '.' + submission.extension;
+}
+
+function sanitizeFilenamePart_(value, maxCharacters) {
+  const cleaned = String(value)
+    .normalize('NFKC')
+    .replace(/[<>:\"/\\|?*\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  const shortened = Array.from(cleaned).slice(0, maxCharacters).join('');
+  return shortened || '미입력';
+}
+
+function enforceHourlySubmissionLimit_() {
+  const cache = CacheService.getScriptCache();
+  const hourKey = 'receipt-hour-' + Utilities.formatDate(
+    new Date(),
+    'Asia/Seoul',
+    'yyyyMMddHH'
+  );
+  const currentCount = Number(cache.get(hourKey) || 0);
+  if (currentCount >= CONFIG.MAX_SUBMISSIONS_PER_HOUR) {
+    throw publicError_('현재 제출이 많습니다. 잠시 후 다시 시도해 주세요.');
+  }
+  cache.put(hourKey, String(currentCount + 1), 3600);
 }
 
 function sha256Hex_(bytes) {
