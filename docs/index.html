@@ -5,51 +5,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="referrer" content="no-referrer">
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
-    <title>영수증 제출함</title>
+    <title>중화중학교 AI 영수증 제출</title>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
+    <header class="site-header">
+      <nav class="topbar" aria-label="서비스 정보">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">중</span>
+          <span class="brand-copy"><strong>중화중학교</strong><small>AI 영수증 제출</small></span>
+        </div>
+        <span class="access-badge">로그인 없이 제출</span>
+      </nav>
+    </header>
+
     <main>
-      <header class="hero">
-        <p class="eyebrow">RECEIPT DROP · PRIVATE STORAGE</p>
-        <h1>영수증은<br><span>Google에만.</span></h1>
-        <p class="lead">이 안내 페이지는 GitHub Pages에 있지만, 이름·구매정보 입력과 파일 제출은 로그인 없이 이용할 수 있는 Google Apps Script에서만 이루어집니다.</p>
-        <a class="primary" href="https://script.google.com/macros/s/AKfycbyC_qsLJScQGt4_yyDbNDVPpmgJq5qQEhKpr_cKYfQuMkSJ05WF6n7SNIKfpF9IJKpx/exec" rel="noreferrer">영수증 제출 시작하기 <span aria-hidden="true">→</span></a>
-        <p class="account-note">로그인 없이 제출 가능 · 저장된 파일은 담당자만 열람</p>
-      </header>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow">JUNGHWA MIDDLE SCHOOL · AI RECEIPT</p>
+          <h1 id="hero-title">학교 영수증 제출을<br><span>가장 간단하게.</span></h1>
+          <p class="lead">이름과 구매정보를 적고 영수증을 첨부하면 접수가 끝납니다. 제출 파일은 중화중학교 담당자의 비공개 Google Drive에만 보관됩니다.</p>
+          <a class="primary" href="https://script.google.com/macros/s/AKfycbyC_qsLJScQGt4_yyDbNDVPpmgJq5qQEhKpr_cKYfQuMkSJ05WF6n7SNIKfpF9IJKpx/exec" rel="noreferrer">
+            AI 영수증 제출하기 <span aria-hidden="true">→</span>
+          </a>
+          <p class="account-note">Google 로그인 불필요 · PDF/JPG/PNG · 최대 8MB</p>
+        </div>
+
+        <div class="receipt-card" aria-label="제출 과정 요약">
+          <div class="receipt-head">
+            <span class="ai-mark">AI</span>
+            <span>RECEIPT</span>
+          </div>
+          <p class="receipt-title">영수증 접수 준비</p>
+          <ol>
+            <li><span>01</span><strong>이름과 구매정보 입력</strong></li>
+            <li><span>02</span><strong>영수증 파일 첨부</strong></li>
+            <li><span>03</span><strong>비공개 Drive 저장</strong></li>
+          </ol>
+          <div class="receipt-status"><span aria-hidden="true">✓</span> 개인정보 보호 설정 적용</div>
+        </div>
+      </section>
 
       <section class="flow" aria-labelledby="flow-title">
-        <p class="section-label">DATA FLOW</p>
-        <h2 id="flow-title">제출 정보가 이동하는 경로</h2>
-        <ol>
-          <li><strong>GitHub Pages</strong><span>안내문만 표시합니다. 이름이나 파일을 받지 않습니다.</span></li>
-          <li><strong>Apps Script</strong><span>로그인 없이 받은 입력값과 파일 형식·용량을 서버에서 재검사합니다.</span></li>
-          <li><strong>Private Drive</strong><span>구매일자·이름·품목이 포함된 파일명으로 비공개 저장하며 자동 삭제하지 않습니다.</span></li>
-        </ol>
+        <p class="section-label">SIMPLE FLOW</p>
+        <h2 id="flow-title">접수는 짧게, 보관은 안전하게.</h2>
+        <div class="feature-grid">
+          <article>
+            <span class="feature-number">01</span>
+            <h3>바로 시작</h3>
+            <p>별도 로그인 없이 제출 화면을 열고 필요한 정보만 입력합니다.</p>
+          </article>
+          <article>
+            <span class="feature-number">02</span>
+            <h3>서버 재검사</h3>
+            <p>Apps Script가 파일 형식과 용량을 다시 확인한 뒤 접수합니다.</p>
+          </article>
+          <article>
+            <span class="feature-number">03</span>
+            <h3>비공개 보관</h3>
+            <p>구매일자·이름·품목 파일명으로 담당자 Drive에 저장합니다.</p>
+          </article>
+        </div>
       </section>
 
       <section class="privacy" aria-labelledby="privacy-title">
-        <div>
-          <p class="section-label">PRIVACY BY DESIGN</p>
-          <h2 id="privacy-title">필요한 것만 수집합니다.</h2>
+        <div class="privacy-heading">
+          <span class="privacy-icon" aria-hidden="true">✓</span>
+          <div>
+            <p class="section-label">PRIVATE BY DESIGN</p>
+            <h2 id="privacy-title">제출은 공개,<br>열람은 비공개.</h2>
+          </div>
         </div>
         <dl>
           <div><dt>수집</dt><dd>이름, 구매내용, 구매일자, 영수증 파일, 제출 시각</dd></div>
           <div><dt>미수집</dt><dd>앱 차원의 이메일·IP·원본 파일명·분석 추적 정보</dd></div>
-          <div><dt>보관</dt><dd>담당자 비공개 Google Drive, 담당자가 직접 삭제할 때까지</dd></div>
-          <div><dt>접근</dt><dd>누구나 제출할 수 있지만 저장 자료는 담당자와 정책상 허용된 관리자만 열람</dd></div>
+          <div><dt>보관</dt><dd>중화중학교 담당자 비공개 Google Drive</dd></div>
+          <div><dt>접근</dt><dd>담당자와 Google Workspace 정책상 허용된 관리자</dd></div>
         </dl>
       </section>
 
-      <aside class="warning">
-        <strong>제출 전 확인</strong>
-        <p>영수증에 주민등록번호, 전체 카드번호, 계좌번호처럼 확인에 불필요한 정보가 있다면 먼저 가려 주세요. 어떤 시스템도 절대적인 무유출을 보장할 수는 없습니다.</p>
+      <aside class="notice">
+        <strong>제출 전 확인해 주세요</strong>
+        <p>주민등록번호, 전체 카드번호, 계좌번호처럼 확인에 불필요한 정보는 먼저 가려 주세요. 자동 삭제 기능은 사용하지 않으며 삭제 요청은 담당자에게 전달해 주세요.</p>
       </aside>
-
-      <footer>
-        <span>개인정보 문의와 삭제 요청은 담당자에게 전달해 주세요.</span>
-        <a href="https://github.com/kdynt17/receipt-uploader" rel="noreferrer">공개 소스 확인</a>
-      </footer>
     </main>
+
+    <footer>
+      <div class="footer-inner">
+        <span>중화중학교 AI 영수증 제출</span>
+        <a href="https://github.com/kdynt17/receipt-uploader" rel="noreferrer">공개 소스 확인</a>
+      </div>
+    </footer>
   </body>
 </html>
+
