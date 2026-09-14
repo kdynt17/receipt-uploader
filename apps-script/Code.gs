@@ -3,9 +3,7 @@ const CONFIG = Object.freeze({
   STORAGE_FOLDER_NAME: '영수증 제출함 - 비공개 보관',
   LOG_SPREADSHEET_NAME: '영수증 제출함 - 접수 기록',
   LOG_SHEET_NAME: '제출내역',
-  RETENTION_DAYS: 30,
   MAX_FILE_BYTES: 8 * 1024 * 1024,
-  PUBLIC_PAGE_URL: 'https://kdynt17.github.io/receipt-uploader/',
   ALLOWED_FILES: Object.freeze({
     pdf: Object.freeze({ mime: 'application/pdf', magic: [0x25, 0x50, 0x44, 0x46, 0x2d] }),
     jpg: Object.freeze({ mime: 'image/jpeg', magic: [0xff, 0xd8, 0xff] }),
@@ -23,8 +21,6 @@ function doGet() {
   const template = HtmlService.createTemplateFromFile('Index');
   template.appName = CONFIG.APP_NAME;
   template.maxFileMb = CONFIG.MAX_FILE_BYTES / 1024 / 1024;
-  template.retentionDays = CONFIG.RETENTION_DAYS;
-  template.publicPageUrl = CONFIG.PUBLIC_PAGE_URL;
 
   return template
     .evaluate()
@@ -34,7 +30,7 @@ function doGet() {
 
 /**
  * Run once from the editor before deploying the web app.
- * Creates an app-owned private folder, a private log sheet, and a daily purge trigger.
+ * Creates an app-owned private folder and a private log sheet.
  */
 function setupReceiptApp() {
   const lock = LockService.getScriptLock();
@@ -72,16 +68,39 @@ function setupReceiptApp() {
         }
       );
 
-      initializeLogSheet_(spreadsheet);
       properties.setProperty(PROPERTY_KEYS.SPREADSHEET_ID, spreadsheetId);
     }
 
-    ensureCleanupTrigger_();
+    const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+    migrateLogSheet_(spreadsheet);
+    disableCleanupTriggers_();
 
     return {
       ok: true,
       folderUrl: 'https://drive.google.com/drive/folders/' + folderId,
       spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/' + spreadsheetId + '/edit',
+    };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * Run once after upgrading from the former 30-day-retention version.
+ * Preserves existing receipt rows, updates their column order, and removes purge triggers.
+ */
+function applyReceiptAppUpdate() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+
+  try {
+    const storage = getStorage_();
+    const spreadsheet = SpreadsheetApp.openById(storage.spreadsheetId);
+    migrateLogSheet_(spreadsheet);
+    return {
+      ok: true,
+      removedCleanupTriggers: disableCleanupTriggers_(),
+      automaticDeletion: false,
     };
   } finally {
     lock.releaseLock();
@@ -112,9 +131,6 @@ function submitReceipt(formObject) {
     }
 
     const submittedAt = new Date();
-    const expiresAt = new Date(
-      submittedAt.getTime() + CONFIG.RETENTION_DAYS * 24 * 60 * 60 * 1000
-    );
     const reference = createReference_(submittedAt);
     const storedName = 'receipt_' + Utilities.getUuid() + '.' + submission.extension;
     const storedBlob = submission.blob
@@ -129,7 +145,6 @@ function submitReceipt(formObject) {
         parents: [storage.folderId],
         appProperties: {
           receiptUploader: 'receipt-v1',
-          expiresOn: Utilities.formatDate(expiresAt, 'UTC', 'yyyy-MM-dd'),
         },
       },
       storedBlob,
@@ -137,22 +152,23 @@ function submitReceipt(formObject) {
     );
     createdFileId = driveFile.id;
 
-    const sheet = SpreadsheetApp.openById(storage.spreadsheetId).getSheetByName(
-      CONFIG.LOG_SHEET_NAME
-    );
+    const spreadsheet = SpreadsheetApp.openById(storage.spreadsheetId);
+    migrateLogSheet_(spreadsheet);
+    const sheet = spreadsheet.getSheetByName(CONFIG.LOG_SHEET_NAME);
     if (!sheet) {
       throw new Error('저장 설정을 확인할 수 없습니다. 관리자에게 문의해 주세요.');
     }
 
     sheet.appendRow([
-      reference,
+      safeSheetText_(submission.name),
+      safeSheetText_(submission.purchaseDescription),
+      submission.purchaseDate,
       submittedAt,
-      submission.name,
+      reference,
       submission.mime,
       submission.bytes.length,
       sha256Hex_(submission.bytes),
       createdFileId,
-      expiresAt,
     ]);
 
     cache.put(cacheKey, reference, 21600);
@@ -178,79 +194,103 @@ function submitReceipt(formObject) {
 }
 
 /**
- * Permanently deletes expired receipt files and their identifying log rows.
- * Google Workspace administrators may still retain provider-level backups under policy.
+ * Compatibility no-op for any old trigger that has not yet been removed.
+ * This function intentionally never deletes files or spreadsheet rows.
  */
 function cleanupExpiredReceipts() {
-  const lock = LockService.getScriptLock();
-  lock.waitLock(30000);
-
-  try {
-    const storage = getStorage_();
-    const sheet = SpreadsheetApp.openById(storage.spreadsheetId).getSheetByName(
-      CONFIG.LOG_SHEET_NAME
-    );
-    const lastRow = sheet.getLastRow();
-    if (lastRow < 2) return;
-
-    const values = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
-    const now = new Date();
-
-    for (let index = values.length - 1; index >= 0; index -= 1) {
-      const fileId = String(values[index][6] || '');
-      const expiresAt = values[index][7];
-      if (!(expiresAt instanceof Date) || expiresAt > now) continue;
-
-      if (fileId) {
-        try {
-          Drive.Files.remove(fileId);
-        } catch (error) {
-          const message = String(error && error.message ? error.message : '');
-          if (!/not found|File not found|404/i.test(message)) {
-            console.error('RETENTION_DELETE_FAILED');
-            continue;
-          }
-        }
-      }
-      sheet.deleteRow(index + 2);
-    }
-  } finally {
-    lock.releaseLock();
-  }
+  return { ok: true, automaticDeletion: false };
 }
 
-function initializeLogSheet_(spreadsheet) {
-  const sheet = spreadsheet.getSheets()[0];
-  sheet.setName(CONFIG.LOG_SHEET_NAME);
-  sheet.getRange(1, 1, 1, 8).setValues([[
-    '접수번호',
-    '접수시각',
+function migrateLogSheet_(spreadsheet) {
+  const oldHeaders = [
+    '접수번호', '접수시각', '이름', '파일형식', '파일크기(bytes)',
+    'SHA-256', 'Drive 파일 ID', '자동삭제시각',
+  ];
+  const newHeaders = [
     '이름',
+    '구매내용',
+    '구매일자',
+    '접수시각',
+    '접수번호',
     '파일형식',
     '파일크기(bytes)',
     'SHA-256',
     'Drive 파일 ID',
-    '자동삭제시각',
-  ]]);
+  ];
+
+  let sheet = spreadsheet.getSheetByName(CONFIG.LOG_SHEET_NAME);
+  if (!sheet) {
+    sheet = spreadsheet.getSheets()[0] || spreadsheet.insertSheet();
+    sheet.setName(CONFIG.LOG_SHEET_NAME);
+  }
+
+  const lastRow = sheet.getLastRow();
+  const existingHeaders = lastRow > 0
+    ? sheet.getRange(1, 1, 1, newHeaders.length).getDisplayValues()[0]
+    : [];
+  const isOldSchema = headersMatch_(existingHeaders, oldHeaders);
+  const isNewSchema = headersMatch_(existingHeaders, newHeaders);
+
+  if (isOldSchema) {
+    const rowCount = Math.max(0, lastRow - 1);
+    const oldRows = rowCount > 0
+      ? sheet.getRange(2, 1, rowCount, oldHeaders.length).getValues()
+      : [];
+    const migratedRows = oldRows.map(function (row) {
+      return [
+        row[2],
+        '',
+        '',
+        row[1],
+        row[0],
+        row[3],
+        row[4],
+        row[5],
+        row[6],
+      ];
+    });
+
+    if (rowCount > 0) {
+      sheet.getRange(2, 1, rowCount, newHeaders.length).clearContent();
+    }
+    sheet.getRange(1, 1, 1, newHeaders.length).setValues([newHeaders]);
+    if (migratedRows.length > 0) {
+      sheet.getRange(2, 1, migratedRows.length, newHeaders.length).setValues(migratedRows);
+    }
+  } else if (!isNewSchema) {
+    const hasContent = existingHeaders.some(function (value) { return value !== ''; });
+    if (hasContent) {
+      throw new Error('접수 기록의 열 구성을 자동으로 확인할 수 없습니다.');
+    }
+    sheet.getRange(1, 1, 1, newHeaders.length).setValues([newHeaders]);
+  }
+
   sheet.setFrozenRows(1);
-  sheet.getRange('B:B').setNumberFormat('yyyy-mm-dd hh:mm:ss');
-  sheet.getRange('H:H').setNumberFormat('yyyy-mm-dd hh:mm:ss');
-  sheet.getRange('A:H').setWrap(false);
-  sheet.autoResizeColumns(1, 8);
+  sheet.getRange('D:D').setNumberFormat('yyyy-mm-dd hh:mm:ss');
+  sheet.getRange('A:I').setWrap(false);
+  sheet.getRange(1, 1, 1, newHeaders.length)
+    .setBackground('#f1f3f4')
+    .setFontWeight('bold');
+  [140, 240, 105, 165, 190, 120, 120, 420, 260].forEach(function (width, index) {
+    sheet.setColumnWidth(index + 1, width);
+  });
 }
 
-function ensureCleanupTrigger_() {
-  const exists = ScriptApp.getProjectTriggers().some(function (trigger) {
-    return trigger.getHandlerFunction() === 'cleanupExpiredReceipts';
+function headersMatch_(actual, expected) {
+  return expected.every(function (value, index) {
+    return actual[index] === value;
   });
+}
 
-  if (!exists) {
-    ScriptApp.newTrigger('cleanupExpiredReceipts')
-      .timeBased()
-      .everyDays(1)
-      .atHour(3)
-      .create();
-  }
+function disableCleanupTriggers_() {
+  let removed = 0;
+  ScriptApp.getProjectTriggers().forEach(function (trigger) {
+    if (trigger.getHandlerFunction() === 'cleanupExpiredReceipts') {
+      ScriptApp.deleteTrigger(trigger);
+      removed += 1;
+    }
+  });
+  return removed;
 }
 
 function getStorage_() {
@@ -272,6 +312,30 @@ function validateSubmission_(formObject) {
   const name = String(formObject.submitterName || '').normalize('NFC').trim();
   if (!/^[\p{L}\p{M}][\p{L}\p{M} .'-]{1,49}$/u.test(name)) {
     throw publicError_('이름은 문자 중심으로 2~50자 이내로 입력해 주세요.');
+  }
+
+  const purchaseDescription = String(formObject.purchaseDescription || '')
+    .normalize('NFC')
+    .trim();
+  if (purchaseDescription.length < 1 || purchaseDescription.length > 100 ||
+      /[\u0000-\u001f\u007f]/.test(purchaseDescription)) {
+    throw publicError_('구매한 물품은 1~100자 이내로 입력해 주세요.');
+  }
+
+  const purchaseDate = String(formObject.purchaseDate || '');
+  const dateMatch = purchaseDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!dateMatch) {
+    throw publicError_('구매일자를 올바르게 선택해 주세요.');
+  }
+  const year = Number(dateMatch[1]);
+  const month = Number(dateMatch[2]);
+  const day = Number(dateMatch[3]);
+  const parsedDate = new Date(year, month - 1, day, 12, 0, 0);
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+  if (parsedDate.getFullYear() !== year || parsedDate.getMonth() !== month - 1 ||
+      parsedDate.getDate() !== day || parsedDate > today) {
+    throw publicError_('구매일자는 오늘 또는 이전 날짜여야 합니다.');
   }
 
   const nonce = String(formObject.submissionNonce || '');
@@ -311,12 +375,19 @@ function validateSubmission_(formObject) {
 
   return {
     name: name,
+    purchaseDescription: purchaseDescription,
+    purchaseDate: purchaseDate,
     nonce: nonce,
     blob: blob,
     bytes: bytes,
     extension: extension === 'jpeg' ? 'jpg' : extension,
     mime: allowed.mime,
   };
+}
+
+function safeSheetText_(value) {
+  const text = String(value);
+  return /^[=+\-@]/.test(text) ? "'" + text : text;
 }
 
 function sha256Hex_(bytes) {
@@ -342,4 +413,3 @@ function publicError_(message) {
 function isPublicError_(error) {
   return Boolean(error && error.isPublic === true);
 }
-
