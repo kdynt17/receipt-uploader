@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #15251f;
+        --muted: #5f6f68;
+        --paper: #fffdf8;
+        --canvas: #eef5ef;
+        --primary: #176b45;
+        --primary-dark: #0f5234;
+        --line: #d9e3dc;
+        --focus: #ffbf47;
+        --danger: #a52929;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(255,255,255,.85), transparent 36rem),
+          var(--canvas);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      main { width: min(100% - 32px, 680px); margin: 0 auto; padding: 48px 0 64px; }
+      .eyebrow { margin: 0 0 10px; color: var(--primary); font-size: .82rem; font-weight: 800; letter-spacing: .12em; }
+      h1 { margin: 0; font-size: clamp(2rem, 7vw, 3.2rem); line-height: 1.05; letter-spacing: -.04em; }
+      .intro { margin: 18px 0 28px; color: var(--muted); font-size: 1.03rem; line-height: 1.7; }
+      .card { padding: clamp(22px, 5vw, 36px); border: 1px solid var(--line); border-radius: 24px; background: var(--paper); box-shadow: 0 18px 50px rgba(32, 58, 44, .08); }
+      .field { margin-bottom: 24px; }
+      label, legend { display: block; margin-bottom: 9px; font-weight: 760; }
+      input[type="text"], input[type="file"] { width: 100%; border: 1px solid #aab9b0; border-radius: 12px; background: white; color: var(--ink); font: inherit; }
+      input[type="text"] { padding: 13px 14px; }
+      input[type="file"] { padding: 10px; }
+      input:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+      .hint { margin: 8px 0 0; color: var(--muted); font-size: .88rem; line-height: 1.55; }
+      fieldset { margin: 0 0 26px; padding: 18px; border: 1px solid var(--line); border-radius: 14px; }
+      legend { padding: 0 6px; }
+      .privacy-list { margin: 0 0 16px; padding-left: 20px; color: var(--muted); font-size: .91rem; line-height: 1.65; }
+      .consent { display: flex; align-items: flex-start; gap: 10px; margin: 0; font-weight: 650; line-height: 1.5; }
+      .consent input { width: 20px; height: 20px; flex: 0 0 auto; margin-top: 2px; accent-color: var(--primary); }
+      button { width: 100%; min-height: 52px; border: 0; border-radius: 13px; background: var(--primary); color: white; font: inherit; font-weight: 800; cursor: pointer; }
+      button:hover { background: var(--primary-dark); }
+      button:disabled { cursor: wait; opacity: .6; }
+      .status { min-height: 26px; margin: 16px 0 0; text-align: center; font-weight: 700; line-height: 1.5; }
+      .status.error { color: var(--danger); }
+      .status.success { color: var(--primary-dark); }
+      .after-submit { display: none; margin-top: 22px; padding: 20px; border-radius: 14px; background: #e7f4eb; text-align: center; }
+      .after-submit strong { display: block; margin: 6px 0; font-size: 1.25rem; }
+      .back-link { display: inline-block; margin-top: 26px; color: var(--primary-dark); font-weight: 700; text-underline-offset: 3px; }
+      .privacy-footnote { margin: 22px 2px 0; color: var(--muted); font-size: .82rem; line-height: 1.6; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">PRIVATE GOOGLE STORAGE</p>
+      <h1><?= appName ?></h1>
+      <p class="intro">이름과 영수증 파일을 제출해 주세요. 파일은 담당자의 비공개 Google Drive에 바로 저장됩니다.</p>
+
+      <section class="card" aria-labelledby="form-title">
+        <h2 id="form-title" style="margin-top:0">영수증 제출</h2>
+        <form id="receipt-form" novalidate>
+          <div class="field">
+            <label for="submitter-name">이름</label>
+            <input id="submitter-name" name="submitterName" type="text" minlength="2" maxlength="50" autocomplete="name" required>
+            <p class="hint">본인 확인에 필요한 이름만 입력합니다.</p>
+          </div>
+
+          <div class="field">
+            <label for="receipt-file">영수증 파일</label>
+            <input id="receipt-file" name="receiptFile" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required>
+            <p class="hint">PDF·JPG·PNG, 최대 <?= maxFileMb ?>MB. 주민번호·계좌번호 등 불필요한 정보는 가리고 제출하세요.</p>
+          </div>
+
+          <fieldset>
+            <legend>개인정보 수집·이용 안내</legend>
+            <ul class="privacy-list">
+              <li>수집 항목: 입력한 이름, 영수증 파일, 제출 시각</li>
+              <li>이용 목적: 영수증 접수와 확인</li>
+              <li>보관 위치: 담당자 Google Drive의 비공개 폴더</li>
+              <li>보관 기간: 제출 후 <?= retentionDays ?>일, 이후 파일과 접수 기록 자동 영구 삭제</li>
+              <li>앱은 이메일·IP·원본 파일명을 별도로 기록하지 않습니다.</li>
+            </ul>
+            <label class="consent" for="consent">
+              <input id="consent" name="consent" type="checkbox" value="yes" required>
+              <span>위 내용을 확인했으며 개인정보 수집·이용에 동의합니다.</span>
+            </label>
+          </fieldset>
+
+          <input id="submission-nonce" name="submissionNonce" type="hidden">
+          <button id="submit-button" type="submit">안전하게 제출하기</button>
+          <p id="status" class="status" role="status" aria-live="polite"></p>
+        </form>
+
+        <div id="after-submit" class="after-submit" aria-live="polite">
+          제출이 완료되었습니다.
+          <strong id="reference"></strong>
+          <span>접수번호를 필요하면 메모해 주세요.</span>
+        </div>
+      </section>
+
+      <p class="privacy-footnote">절대적인 무유출을 기술적으로 보장할 수는 없습니다. 담당자 계정과 Google Workspace 관리 정책에 따라 관리자 접근 또는 제공자 수준의 보존이 있을 수 있습니다.</p>
+      <a class="back-link" href="<?= publicPageUrl ?>" rel="noreferrer">안내 페이지로 돌아가기</a>
+    </main>
+
+    <script>
+      (function () {
+        'use strict';
+
+        const form = document.getElementById('receipt-form');
+        const fileInput = document.getElementById('receipt-file');
+        const nonceInput = document.getElementById('submission-nonce');
+        const button = document.getElementById('submit-button');
+        const status = document.getElementById('status');
+        const afterSubmit = document.getElementById('after-submit');
+        const reference = document.getElementById('reference');
+        const maxBytes = <?= maxFileMb ?> * 1024 * 1024;
+        const allowedTypes = new Set(['application/pdf', 'image/jpeg', 'image/png']);
+
+        function newNonce() {
+          nonceInput.value = crypto.randomUUID();
+        }
+
+        function setStatus(message, type) {
+          status.textContent = message;
+          status.className = 'status' + (type ? ' ' + type : '');
+        }
+
+        function unlock() {
+          button.disabled = false;
+          button.textContent = '안전하게 제출하기';
+        }
+
+        newNonce();
+
+        form.addEventListener('submit', function (event) {
+          event.preventDefault();
+          setStatus('', '');
+
+          if (!form.reportValidity()) return;
+
+          const file = fileInput.files[0];
+          if (!file || !allowedTypes.has(file.type)) {
+            setStatus('PDF, JPG, PNG 파일만 선택해 주세요.', 'error');
+            return;
+          }
+          if (file.size <= 0 || file.size > maxBytes) {
+            setStatus('파일은 비어 있지 않아야 하며 <?= maxFileMb ?>MB 이하여야 합니다.', 'error');
+            return;
+          }
+
+          button.disabled = true;
+          button.textContent = '암호화 전송 중…';
+          setStatus('Google Drive에 안전하게 저장하고 있습니다.', '');
+
+          google.script.run
+            .withSuccessHandler(function (result) {
+              if (!result || !result.ok) {
+                setStatus('제출 결과를 확인할 수 없습니다. 다시 시도해 주세요.', 'error');
+                unlock();
+                return;
+              }
+              form.reset();
+              newNonce();
+              reference.textContent = result.reference;
+              afterSubmit.style.display = 'block';
+              setStatus('제출이 완료되었습니다.', 'success');
+              button.textContent = '제출 완료';
+            })
+            .withFailureHandler(function (error) {
+              const message = error && error.message
+                ? String(error.message).replace(/^Exception:\s*/, '')
+                : '제출하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+              setStatus(message, 'error');
+              unlock();
+            })
+            .submitReceipt(form);
+        });
+      })();
+    </script>
+  </body>
+</html>
+
