@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
+    <title>영수증 제출함</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main>
+      <header class="hero">
+        <p class="eyebrow">RECEIPT DROP · 30 DAY RETENTION</p>
+        <h1>영수증은<br><span>Google에만.</span></h1>
+        <p class="lead">이 안내 페이지는 GitHub Pages에 있지만, 이름 입력과 파일 제출은 학교 계정으로 보호된 Google Apps Script에서만 이루어집니다.</p>
+        <a class="primary" href="https://script.google.com/a/macros/junghwa.sen.ms.kr/s/AKfycbyC_qsLJScQGt4_yyDbNDVPpmgJq5qQEhKpr_cKYfQuMkSJ05WF6n7SNIKfpF9IJKpx/exec" rel="noreferrer">영수증 제출 시작하기 <span aria-hidden="true">→</span></a>
+        <p class="account-note">학교 Google 계정 로그인이 필요합니다.</p>
+      </header>
+
+      <section class="flow" aria-labelledby="flow-title">
+        <p class="section-label">DATA FLOW</p>
+        <h2 id="flow-title">제출 정보가 이동하는 경로</h2>
+        <ol>
+          <li><strong>GitHub Pages</strong><span>안내문만 표시합니다. 이름이나 파일을 받지 않습니다.</span></li>
+          <li><strong>Apps Script</strong><span>학교 계정 확인 후 파일 형식·용량을 서버에서 재검사합니다.</span></li>
+          <li><strong>Private Drive</strong><span>무작위 파일명으로 비공개 저장하고 30일 뒤 자동 삭제합니다.</span></li>
+        </ol>
+      </section>
+
+      <section class="privacy" aria-labelledby="privacy-title">
+        <div>
+          <p class="section-label">PRIVACY BY DESIGN</p>
+          <h2 id="privacy-title">필요한 것만 수집합니다.</h2>
+        </div>
+        <dl>
+          <div><dt>수집</dt><dd>이름, 영수증 파일, 제출 시각</dd></div>
+          <div><dt>미수집</dt><dd>앱 차원의 이메일·IP·원본 파일명·분석 추적 정보</dd></div>
+          <div><dt>보관</dt><dd>담당자 비공개 Google Drive, 제출 후 30일</dd></div>
+          <div><dt>접근</dt><dd>담당자 계정과 Google Workspace 정책상 허용된 관리자</dd></div>
+        </dl>
+      </section>
+
+      <aside class="warning">
+        <strong>제출 전 확인</strong>
+        <p>영수증에 주민등록번호, 전체 카드번호, 계좌번호처럼 확인에 불필요한 정보가 있다면 먼저 가려 주세요. 어떤 시스템도 절대적인 무유출을 보장할 수는 없습니다.</p>
+      </aside>
+
+      <footer>
+        <span>개인정보 문의와 조기 삭제 요청은 담당자에게 전달해 주세요.</span>
+        <a href="https://github.com/kdynt17/receipt-uploader" rel="noreferrer">공개 소스 확인</a>
+      </footer>
+    </main>
+  </body>
+</html>
+
