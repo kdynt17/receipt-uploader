@@ -1,0 +1,69 @@
+:root {
+  color-scheme: light;
+  --ink: #12261e;
+  --muted: #607169;
+  --green: #176b45;
+  --mint: #dff1e5;
+  --paper: #fffdfa;
+  --line: #d6e0d9;
+  --yellow: #ffcf5b;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  color: var(--ink);
+  background:
+    linear-gradient(90deg, rgba(18,38,30,.035) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(rgba(18,38,30,.035) 1px, transparent 1px) 0 0 / 48px 48px,
+    #f1f6f2;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+a:focus-visible { outline: 4px solid var(--yellow); outline-offset: 4px; }
+main { width: min(1120px, calc(100% - 40px)); margin: 0 auto; padding: 72px 0 40px; }
+.hero { min-height: 580px; display: grid; align-content: center; justify-items: start; padding: clamp(30px, 6vw, 78px); border: 1px solid var(--line); border-radius: 36px; background: var(--paper); box-shadow: 0 24px 80px rgba(27, 63, 45, .1); position: relative; overflow: hidden; }
+.hero::after { content: ""; position: absolute; width: 430px; height: 430px; right: -100px; bottom: -150px; border: 92px solid var(--mint); border-radius: 50%; }
+.eyebrow, .section-label { margin: 0 0 16px; color: var(--green); font-size: .78rem; font-weight: 850; letter-spacing: .15em; }
+h1 { position: relative; z-index: 1; margin: 0; font-size: clamp(3.2rem, 9vw, 7rem); line-height: .92; letter-spacing: -.07em; }
+h1 span { color: var(--green); }
+.lead { position: relative; z-index: 1; max-width: 660px; margin: 32px 0; color: var(--muted); font-size: clamp(1rem, 2.3vw, 1.22rem); line-height: 1.75; }
+.primary { position: relative; z-index: 1; display: inline-flex; gap: 18px; align-items: center; padding: 17px 22px; border-radius: 14px; background: var(--green); color: white; text-decoration: none; font-weight: 820; box-shadow: 0 10px 24px rgba(23, 107, 69, .2); }
+.primary:hover { transform: translateY(-2px); }
+.account-note { position: relative; z-index: 1; margin: 13px 4px 0; color: var(--muted); font-size: .84rem; }
+.flow, .privacy { margin-top: 28px; padding: clamp(30px, 6vw, 64px); border: 1px solid var(--line); border-radius: 28px; background: rgba(255,253,250,.9); }
+h2 { margin: 0 0 30px; font-size: clamp(1.8rem, 4vw, 3rem); letter-spacing: -.04em; }
+.flow ol { margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; list-style: none; counter-reset: flow; }
+.flow li { counter-increment: flow; min-height: 220px; padding: 26px; border-radius: 20px; background: var(--mint); }
+.flow li::before { content: "0" counter(flow); display: block; margin-bottom: 48px; color: var(--green); font-weight: 850; }
+.flow strong, .flow span { display: block; }
+.flow strong { margin-bottom: 10px; font-size: 1.14rem; }
+.flow span { color: var(--muted); line-height: 1.6; }
+.privacy { display: grid; grid-template-columns: .9fr 1.1fr; gap: 48px; }
+.privacy dl { margin: 0; }
+.privacy dl div { display: grid; grid-template-columns: 84px 1fr; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.privacy dl div:first-child { padding-top: 0; }
+.privacy dt { font-weight: 850; }
+.privacy dd { margin: 0; color: var(--muted); line-height: 1.55; }
+.warning { margin-top: 28px; padding: 28px 32px; border: 1px solid #e6b748; border-radius: 22px; background: #fff6dc; }
+.warning strong { display: block; margin-bottom: 8px; }
+.warning p { margin: 0; color: #6e5a25; line-height: 1.65; }
+footer { display: flex; justify-content: space-between; gap: 24px; padding: 28px 4px 0; color: var(--muted); font-size: .85rem; }
+footer a { color: var(--green); font-weight: 750; text-underline-offset: 3px; }
+
+@media (max-width: 760px) {
+  main { width: min(100% - 24px, 1120px); padding-top: 24px; }
+  .hero { min-height: 520px; border-radius: 24px; }
+  .hero::after { opacity: .55; }
+  .flow ol, .privacy { grid-template-columns: 1fr; }
+  .flow li { min-height: auto; }
+  .flow li::before { margin-bottom: 24px; }
+  footer { flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .primary:hover { transform: none; }
+}
+
