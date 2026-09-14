@@ -163,10 +163,10 @@ function submitReceipt(formObject) {
     }
 
     sheet.appendRow([
-      safeSheetText_(submission.name),
-      safeSheetText_(submission.purchaseDescription),
       submission.purchaseDate,
       submittedAt,
+      safeSheetText_(submission.name),
+      safeSheetText_(submission.purchaseDescription),
       reference,
       submission.mime,
       submission.bytes.length,
@@ -205,15 +205,26 @@ function cleanupExpiredReceipts() {
 }
 
 function migrateLogSheet_(spreadsheet) {
-  const oldHeaders = [
+  const legacyHeaders = [
     '접수번호', '접수시각', '이름', '파일형식', '파일크기(bytes)',
     'SHA-256', 'Drive 파일 ID', '자동삭제시각',
   ];
-  const newHeaders = [
+  const previousHeaders = [
     '이름',
     '구매내용',
     '구매일자',
     '접수시각',
+    '접수번호',
+    '파일형식',
+    '파일크기(bytes)',
+    'SHA-256',
+    'Drive 파일 ID',
+  ];
+  const targetHeaders = [
+    '구매일자',
+    '접수시각',
+    '이름',
+    '구매내용',
     '접수번호',
     '파일형식',
     '파일크기(bytes)',
@@ -229,52 +240,46 @@ function migrateLogSheet_(spreadsheet) {
 
   const lastRow = sheet.getLastRow();
   const existingHeaders = lastRow > 0
-    ? sheet.getRange(1, 1, 1, newHeaders.length).getDisplayValues()[0]
+    ? sheet.getRange(1, 1, 1, targetHeaders.length).getDisplayValues()[0]
     : [];
-  const isOldSchema = headersMatch_(existingHeaders, oldHeaders);
-  const isNewSchema = headersMatch_(existingHeaders, newHeaders);
+  const hasContent = existingHeaders.some(function (value) { return value !== ''; });
+  const detectedHeaders = [targetHeaders, previousHeaders, legacyHeaders].find(function (headers) {
+    return headersMatch_(existingHeaders, headers);
+  });
+  const isTargetSchema = headersMatch_(existingHeaders, targetHeaders);
 
-  if (isOldSchema) {
+  if (!hasContent) {
+    sheet.getRange(1, 1, 1, targetHeaders.length).setValues([targetHeaders]);
+  } else if (!detectedHeaders) {
+    throw new Error('접수 기록의 열 구성을 자동으로 확인할 수 없습니다.');
+  } else if (!isTargetSchema) {
     const rowCount = Math.max(0, lastRow - 1);
-    const oldRows = rowCount > 0
-      ? sheet.getRange(2, 1, rowCount, oldHeaders.length).getValues()
+    const existingRows = rowCount > 0
+      ? sheet.getRange(2, 1, rowCount, detectedHeaders.length).getValues()
       : [];
-    const migratedRows = oldRows.map(function (row) {
-      return [
-        row[2],
-        '',
-        '',
-        row[1],
-        row[0],
-        row[3],
-        row[4],
-        row[5],
-        row[6],
-      ];
+    const migratedRows = existingRows.map(function (row) {
+      return targetHeaders.map(function (header) {
+        const sourceIndex = detectedHeaders.indexOf(header);
+        return sourceIndex >= 0 ? row[sourceIndex] : '';
+      });
     });
 
-    if (rowCount > 0) {
-      sheet.getRange(2, 1, rowCount, newHeaders.length).clearContent();
-    }
-    sheet.getRange(1, 1, 1, newHeaders.length).setValues([newHeaders]);
+    const affectedColumnCount = Math.max(detectedHeaders.length, targetHeaders.length);
+    sheet.getRange(1, 1, Math.max(lastRow, 1), affectedColumnCount).clearContent();
+    sheet.getRange(1, 1, 1, targetHeaders.length).setValues([targetHeaders]);
     if (migratedRows.length > 0) {
-      sheet.getRange(2, 1, migratedRows.length, newHeaders.length).setValues(migratedRows);
+      sheet.getRange(2, 1, migratedRows.length, targetHeaders.length).setValues(migratedRows);
     }
-  } else if (!isNewSchema) {
-    const hasContent = existingHeaders.some(function (value) { return value !== ''; });
-    if (hasContent) {
-      throw new Error('접수 기록의 열 구성을 자동으로 확인할 수 없습니다.');
-    }
-    sheet.getRange(1, 1, 1, newHeaders.length).setValues([newHeaders]);
   }
 
   sheet.setFrozenRows(1);
-  sheet.getRange('D:D').setNumberFormat('yyyy-mm-dd hh:mm:ss');
+  sheet.getRange('A:A').setNumberFormat('yyyy-mm-dd');
+  sheet.getRange('B:B').setNumberFormat('yyyy-mm-dd hh:mm:ss');
   sheet.getRange('A:I').setWrap(false);
-  sheet.getRange(1, 1, 1, newHeaders.length)
+  sheet.getRange(1, 1, 1, targetHeaders.length)
     .setBackground('#f1f3f4')
     .setFontWeight('bold');
-  [140, 240, 105, 165, 190, 120, 120, 420, 260].forEach(function (width, index) {
+  [105, 165, 140, 240, 190, 120, 120, 420, 260].forEach(function (width, index) {
     sheet.setColumnWidth(index + 1, width);
   });
 }
