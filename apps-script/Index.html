@@ -54,6 +54,7 @@
       .after-submit { display: none; margin-top: 22px; padding: 20px; border-radius: 14px; background: #e7f4eb; text-align: center; }
       .after-submit strong { display: block; margin: 6px 0; font-size: 1.25rem; }
       .privacy-footnote { margin: 22px 2px 0; color: var(--muted); font-size: .82rem; line-height: 1.6; }
+      .bot-trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
     </style>
   </head>
   <body>
@@ -96,6 +97,7 @@
               <li>이용 목적: 영수증 접수와 확인</li>
               <li>보관 위치: 담당자 Google Drive의 비공개 폴더</li>
               <li>보관 기간: 담당자가 직접 삭제할 때까지 보관하며 자동 삭제하지 않음</li>
+              <li>로그인 없이 제출할 수 있지만 저장된 파일은 제출자가 열람할 수 없습니다.</li>
               <li>앱은 이메일·IP·원본 파일명을 별도로 기록하지 않습니다.</li>
             </ul>
             <label class="consent" for="consent">
@@ -104,6 +106,10 @@
             </label>
           </fieldset>
 
+          <div class="bot-trap" aria-hidden="true">
+            <label for="website">웹사이트</label>
+            <input id="website" name="website" type="text" tabindex="-1" autocomplete="off">
+          </div>
           <input id="submission-nonce" name="submissionNonce" type="hidden">
           <button id="submit-button" type="submit">안전하게 제출하기</button>
           <p id="status" class="status" role="status" aria-live="polite"></p>
